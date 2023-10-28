@@ -5,7 +5,7 @@ int main(int argc, char *argv[])
 {
 	if(argc != 2)
 	{
-		fprintf(2, "usage: sleep ticks\n");	//so easy, don't need description:)D
+		printf("usage: sleep ticks\n");	//so easy, don't need description:)D
 		exit(1);
 	}
 	int ticks=atoi(argv[1]);	//atoi change string into int
