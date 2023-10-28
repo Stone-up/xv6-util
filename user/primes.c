@@ -1,69 +1,81 @@
 #include "kernel/types.h"
 #include "user/user.h"
-
-
- 
-void prime(int* a, int cnt)
+int ps[2];
+void prime(int *ps)
 {
- 
-	if (cnt == 0) 
+	int p, n, cs[2];
+	int num = read(ps[0], &p, sizeof(p));
+	pipe(cs);
+	if (!num)
 	{	
+		close(ps[0]);
 		exit(0);
 	}
-    
-	printf("prime %d\n", a[0]);
-	int p[2];	//0:read, 1:write
-	pipe(p);	
-	int pid = fork();
-	if (pid < 0)	//check error
+	else
 	{
-		printf("fork error\n");
-		close(p[1]);
+		printf("prime %d\n", p);
+	}
+	int pid = fork();
+	if(pid < 0)
+	{
+		printf("fork error! \n");
+		close(ps[0]);
+		close(cs[0]);
+		close(cs[1]);
 		exit(1);
 	}
-	else if (pid == 0)	//child
+	else if(pid > 0)
 	{
-		close(p[1]);
-        	int tmp = 0;
-		int buf[64] = {'\0'};
-		while (1)
+		close(cs[0]);
+		while(read(ps[0], &n, sizeof(n)))
 		{
-			int numr = read(p[0], &buf[tmp], 4);
-			if (numr == 4) 
-				tmp++;
-			if (numr == 1 && buf[tmp] == '\n') 
-				break;
+			if (n%p != 0)
+			{
+				write(cs[1], &n, sizeof(n));
+			}
 		}
-		close(p[0]);
-		prime(buf, tmp);
-		exit(0);
-	} 
-	
-	else	//parent
-	{
-		close(p[0]);
-		for(int i = 0; i < cnt; i++) 
-		{
-		    if (a[i] % a[0] == 0) //not primes
-			continue; 
-		    else 
-			write(p[1], &a[i], 4);
-		}
-		char b = '\n';
-		write(p[1], &b, 1);
-		close(p[1]);
+		close(ps[0]);
+		close(cs[1]);
 		wait(0);
 		exit(0);
 	}
+	else
+	{
+		close(ps[0]);
+		close(cs[1]);
+		prime(cs);
+		close(cs[0]);
+		exit(0);
+	}
 }
- 
 int main()
 {
-	int buf[34];
-	for (int i = 0; i < 34; i++)
+	pipe(ps);
+	for (int i = 2; i < 36; i++)
 	{
-		buf[i] = i + 2;
+		write(ps[1], &i, sizeof(i));
 	}
-	prime(buf, 34);
-	return 0;
+	int pid = fork();
+	if(pid < 0)
+	{
+		printf("fork error !\n");
+		close(ps[0]);
+		close(ps[1]);
+		exit(1);
+	}
+	else if(pid > 0)	//parent
+	{
+		close(ps[0]);
+		close(ps[1]);
+		wait(0);
+		exit(0);
+        }
+        else	//child
+        {
+		close(ps[1]);
+		prime(ps);
+		close(ps[0]);
+		exit(0);
+	}
 }
+
